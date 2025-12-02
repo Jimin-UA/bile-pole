@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Укази Гетьмана | БІЛЕ ПОЛЕ</title>
+    <style>
+        body {
+            font-family: 'Verdana', 'Arial', sans-serif;
+            background-color: #CCCCFF;
+            color: #000000;
+            margin: 20px;
+        }
+        .container {
+            width: 800px;
+            margin: 0 auto;
+            background-color: #FFFFFF;
+            border: 5px solid #000080;
+            padding: 10px;
+            position: relative; /* Важливо для модального вікна */
+        }
+        h1 {
+            color: #FF0000;
+            font-size: 24px;
+            text-align: center;
+            border-bottom: 2px dashed #000080;
+            padding-bottom: 5px;
+        }
+        /* Стилі для прев'ю Указу */
+        .ukaz-preview {
+            border: 2px groove #000000;
+            padding: 10px;
+            margin-bottom: 15px;
+            background-color: #FFFFEE;
+            cursor: pointer; /* Для клікабельності */
+        }
+        .ukaz-preview:hover {
+            background-color: #FFEEAA; /* Зміна кольору при наведенні */
+        }
+        .preview-title {
+            color: #CC0000;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .preview-meta {
+            font-style: italic;
+            font-size: 12px;
+            color: #666666;
+            text-align: right;
+            border-top: 1px dotted #AAAAAA;
+            padding-top: 5px;
+        }
+        a:link, a:visited {
+            color: #0000FF;
+            text-decoration: underline;
+        }
+        .menu a {
+            font-weight: bold;
+            text-decoration: none;
+            padding: 3px 8px;
+            border: 1px outset #CCCCCC;
+            background-color: #E0E0E0;
+        }
+        pre {
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            background-color: #F0F0F0;
+            padding: 8px;
+            border: 1px solid #CCCCCC;
+        }
+
+        /* === СТИЛІ ДЛЯ МОДАЛЬНОГО ВІКНА (2000-ті) === */
+        #modal {
+            display: none; /* Приховано за замовчуванням */
+            position: fixed; /* Фіксоване положення на екрані */
+            z-index: 10; /* Вище іншого контенту */
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5); /* Напівпрозорий чорний фон */
+        }
+        #modal-content {
+            background-color: #FFFFFF;
+            margin: 5% auto; /* Центрування */
+            padding: 20px;
+            border: 8px ridge #808080; /* Старовинна "3D" рамка */
+            width: 700px;
+            box-shadow: 5px 5px 10px rgba(0,0,0,0.3);
+        }
+        #modal-close {
+            color: #CC0000;
+            float: right;
+            font-size: 30px;
+            font-weight: bold;
+            text-decoration: none;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        #modal-close:hover {
+            color: #FF0000;
+        }
+        #modal-title {
+            color: #FF0000;
+            font-size: 24px;
+            text-align: center;
+            margin-bottom: 10px;
+            border-bottom: 2px dashed #000080;
+        }
+        #modal-signer {
+            font-style: italic;
+            text-align: right;
+            font-size: 14px;
+            color: #000080;
+            border-top: 1px solid #000080;
+            padding-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <h1>📜 Архів Указів Гетьманату</h1>
+    <p style="text-align: center; font-style: italic;">Перелік усіх діючих постанов та розпоряджень</p>
+
+    <table width="100%" border="0" cellspacing="5" cellpadding="5" bgcolor="#C0C0C0" style="margin-bottom: 15px;">
+        <tr>
+            <td align="center" class="menu"><a href="index.html">Головна</a></td>
+            <td align="center" class="menu"><a href="statut.html">Статут</a></td>
+            <td align="center" class="menu"><a href="ukazy.html">Укази Гетьмана</a></td>
+            <td align="center" class="menu"><a href="contacts.html">Зв'язок</a></td>
+        </tr>
+    </table>
+
+    <div id="UkazyList">
+        <h2>Завантаження Указів...</h2>
+        <p>Будь ласка, зачекайте, система завантажує Укази з архівів Генеральної Старшини.</p>
+    </div>
+
+    <div style="border-top: 2px solid #000080; margin-top: 15px; padding-top: 10px; text-align: center; font-size: 10px;">
+        &copy; 2025 Держава Біле Поле. Архів Указів.
+    </div>
+
+</div>
+
+<div id="modal">
+    <div id="modal-content">
+        <span id="modal-close">&times;</span>
+        <div id="modal-title"></div>
+        <div id="modal-text"></div>
+        <div id="modal-signer"></div>
+    </div>
+</div>
+
+<script>
+    var totalUkazyLoaded = 0;
+    var maxUkazy = 100;
+    var UkazyListDiv = document.getElementById('UkazyList');
+    var modal = document.getElementById('modal');
+    var modalClose = document.getElementById('modal-close');
+    var modalTitle = document.getElementById('modal-title');
+    var modalText = document.getElementById('modal-text');
+    var modalSigner = document.getElementById('modal-signer');
+
+    // Функція для відображення модального вікна
+    function showUkaz(ukazNumber) {
+        var ukazPath = 'Ukazy/' + ukazNumber + '.txt';
+        modalTitle.innerHTML = "Завантаження...";
+        modalText.innerHTML = '<p style="text-align: center;">Очікуємо відповіді від сервера...</p>';
+        modalSigner.innerHTML = '';
+        modal.style.display = "block";
+        
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', ukazPath, true);
+        
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                var fullText = xhr.responseText;
+                
+                // 1. Витягуємо Назву
+                var nameMatch = fullText.match(/==name:\s*(.*)/i);
+                var title = nameMatch ? nameMatch[1].trim() : "Указ без назви";
+
+                // 2. Витягуємо Підписанта
+                var signerMatch = fullText.match(/==([A-ZА-ЯҐЄІЇ\s,]+)\s*$/i);
+                var signer = signerMatch ? signerMatch[1].trim() : "Невідомий орган";
+
+                // 3. Видаляємо мета-дані з контенту для відображення
+                var cleanContent = fullText
+                    .replace(/==name:.*\n?/, '')
+                    .replace(/==[A-ZА-ЯҐЄІЇ\s,]+$/, '')
+                    .trim();
+
+                modalTitle.innerHTML = "Указ Гетьманства №" + ukazNumber + ": " + title;
+                modalText.innerHTML = '<pre>' + cleanContent + '</pre>';
+                modalSigner.innerHTML = 'Цей Указ затверджено: **' + signer + '**';
+                
+            } else {
+                modalTitle.innerHTML = "Помилка завантаження Указу №" + ukazNumber;
+                modalText.innerHTML = '<p style="color: red; text-align: center;">Файл не знайдено або доступ заблоковано (HTTP ' + xhr.status + ').</p>';
+                modalSigner.innerHTML = '';
+            }
+        };
+        
+        xhr.onerror = function() {
+            modalTitle.innerHTML = "Помилка мережі";
+            modalText.innerHTML = '<p style="color: red; text-align: center;">Не вдалося підключитися до сервера для завантаження Указу.</p>';
+            modalSigner.innerHTML = '';
+        };
+
+        xhr.send();
+    }
+
+    // Закриття модального вікна
+    modalClose.onclick = function() {
+        modal.style.display = "none";
+        // Прибираємо хеш з URL
+        history.pushState("", document.title, window.location.pathname + window.location.search);
+    }
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            modal.style.display = "none";
+            history.pushState("", document.title, window.location.pathname + window.location.search);
+        }
+    }
+
+    // Функція для завантаження прев'ю
+    function loadUkazy() {
+        UkazyListDiv.innerHTML = '';
+        
+        for (let i = maxUkazy; i >= 1; i--) {
+            let ukazPath = 'Ukazy/' + i + '.txt';
+            let xhr = new XMLHttpRequest();
+            xhr.open('HEAD', ukazPath, true); // Використовуємо HEAD, щоб швидко перевірити існування файлу
+            
+            xhr.onload = (function(ukazNumber) {
+                return function() {
+                    if (xhr.status === 200) {
+                        // Якщо файл існує, робимо другий запит для отримання назви
+                        let xhrContent = new XMLHttpRequest();
+                        xhrContent.open('GET', ukazPath, true);
+
+                        xhrContent.onload = function() {
+                            totalUkazyLoaded++;
+                            var fullText = xhrContent.responseText;
+                            
+                            // Витягуємо Назву
+                            var nameMatch = fullText.match(/==name:\s*(.*)/i);
+                            var title = nameMatch ? nameMatch[1].trim() : "Указ без назви";
+
+                            // Витягуємо Підписанта
+                            var signerMatch = fullText.match(/==([A-ZА-ЯҐЄІЇ\s,]+)\s*$/i);
+                            var signer = signerMatch ? signerMatch[1].trim() : "Невідомий орган";
+
+                            // Створюємо прев'ю
+                            var ukazItem = document.createElement('div');
+                            ukazItem.className = 'ukaz-preview';
+                            ukazItem.setAttribute('data-ukaz-id', ukazNumber);
+                            ukazItem.id = 'ukaz-' + ukazNumber; // ID для якорів
+                            ukazItem.innerHTML = '<div class="preview-title">Указ №' + ukazNumber + ': ' + title + '</div>' +
+                                                 '<div class="preview-meta">Підписано: ' + signer + ' | <a href="#ukaz-' + ukazNumber + '">Детальніше...</a></div>';
+                            
+                            // Обробник кліку на прев'ю
+                            ukazItem.onclick = function() {
+                                showUkaz(ukazNumber);
+                                // Додаємо хеш до URL
+                                history.pushState(null, null, "#ukaz-" + ukazNumber);
+                            };
+                            
+                            UkazyListDiv.appendChild(ukazItem);
+                        };
+                        xhrContent.send();
+
+                    }
+                    
+                    // Фіналізація (перевіряємо, коли завершено перший цикл)
+                    if (ukazNumber === 1) { 
+                        if (totalUkazyLoaded === 0) {
+                             UkazyListDiv.innerHTML = '<h2 style="color: red;">Помилка: Не знайдено жодного Указу в папці "Ukazy".</h2>';
+                        } else {
+                             let finalMessage = document.createElement('p');
+                             finalMessage.innerHTML = 'Завантажено **' + totalUkazyLoaded + '** Указів Гетьмана. <small>(Клікніть, щоб побачити повний текст)</small>';
+                             UkazyListDiv.prepend(finalMessage);
+                        }
+                        
+                        // Перевіряємо, чи є хеш в URL при завантаженні сторінки
+                        if (window.location.hash) {
+                            let hash = window.location.hash.substring(1); // Прибираємо #
+                            let idMatch = hash.match(/ukaz-(\d+)/);
+                            if (idMatch) {
+                                showUkaz(idMatch[1]);
+                            }
+                        }
+                    }
+                };
+            })(i);
+            xhr.send();
+        }
+    }
+
+    window.onload = loadUkazy;
+</script>
+
+</body>
+</html>
